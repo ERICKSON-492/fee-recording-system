@@ -277,35 +277,33 @@ def set_due_date():
         return redirect(url_for('set_due_date'))
 
     return render_template('set_due_date.html', students=students)
-@app.route('/check_due')
+
+@app.route('/check_due', methods=['GET', 'POST'])
 def check_due():
-    with sqlite3.connect(DATABASE) as conn:
-        conn.row_factory = sqlite3.Row
-        c = conn.cursor()
-        c.execute('SELECT * FROM students')
-        students = c.fetchall()
+    student = None
+    dues = []
 
-    def get_total_fee(adm):
-        with sqlite3.connect(DATABASE) as conn:
-            c = conn.cursor()
-            c.execute('SELECT fee_amount FROM fee_structure WHERE class = (SELECT class FROM students WHERE admission_no=?)', (adm,))
-            result = c.fetchone()
-            return result[0] if result else 0.0
+    if request.method == 'POST':
+        admission_no = request.form.get('admission_no', '').strip()
 
-    def get_total_paid(adm):
-        with sqlite3.connect(DATABASE) as conn:
-            c = conn.cursor()
-            c.execute('SELECT SUM(amount_paid) FROM payments WHERE admission_no = ?', (adm,))
-            result = c.fetchone()
-            return result[0] if result[0] else 0.0
+        if admission_no:
+            with sqlite3.connect(DATABASE) as conn:
+                conn.row_factory = sqlite3.Row
+                c = conn.cursor()
 
-    def get_due_amount(adm):
-        return get_total_fee(adm) - get_total_paid(adm)
+                # Get student info
+                c.execute('SELECT * FROM students WHERE admission_no = ?', (admission_no,))
+                student = c.fetchone()
 
-    return render_template("check_due.html", students=students,
-                           get_total_fee=get_total_fee,
-                           get_total_paid=get_total_paid,
-                           get_due_amount=get_due_amount)
+                # Get due info (if any)
+                c.execute('SELECT * FROM fee_cycles WHERE admission_no = ?', (admission_no,))
+                dues = c.fetchall()
+
+            if not student:
+                flash('Student not found.', 'error')
+                return redirect(url_for('check_due'))
+
+    return render_template('check_due.html', student=student, dues=dues)
 
 # ... (all your route functions and other logic above)
 @app.route('/receipt')
