@@ -137,20 +137,38 @@ def get_due_amount(adm):
 
 @app.route('/')
 def index():
-    """Render the homepage with student list and due info."""
-    with get_db_connection() as conn:
-        students = conn.execute('SELECT * FROM students').fetchall()
-    data = []
-    for s in students:
-        data.append({
-            'admission_no': s['admission_no'],
-            'name': s['name'],
-            'class': s['class'],
-            'phone': s['phone'],
-            'due_amount': get_due_amount(s['admission_no'])
-        })
-    return render_template('index.html', students=data)
+    with sqlite3.connect(DATABASE) as conn:
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
 
+        cur.execute('SELECT * FROM students')
+        students = cur.fetchall()
+
+        data = []
+        for student in students:
+            adm = student['admission_no']
+
+            # Get fee structure for student's class
+            cur.execute('SELECT fee_amount FROM fee_structure WHERE class = ?', (student['class'],))
+            fee_row = cur.fetchone()
+            total_fee = fee_row['fee_amount'] if fee_row else 0
+
+            # Get total payments made
+            cur.execute('SELECT SUM(amount_paid) FROM payments WHERE admission_no = ?', (adm,))
+            paid_row = cur.fetchone()
+            total_paid = paid_row[0] if paid_row[0] else 0
+
+            data.append({
+                'admission_no': adm,
+                'name': student['name'],
+                'class': student['class'],
+                'phone': student['phone'],
+                'total_fee': total_fee,
+                'total_paid': total_paid,
+                'due': total_fee - total_paid
+            })
+
+    return render_template('index.html', students=data)
 
 @app.route('/add_student', methods=['GET', 'POST'])
 def add_student():
