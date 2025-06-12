@@ -1,76 +1,30 @@
 {% extends "base.html" %}
-
 {% block content %}
-<div class="container my-5">
-  <h1 class="mb-4 text-center text-primary fw-bold">Students List</h1>
-
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      <div class="mb-3">
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-          </div>
-        {% endfor %}
-      </div>
-    {% endif %}
-  {% endwith %}
-
-  <div class="table-responsive shadow-sm rounded">
-    <table class="table table-bordered table-striped table-hover align-middle">
-      <thead class="table-primary text-uppercase">
-        <tr class="text-center">
-          <th>Admission No</th>
-          <th>Name</th>
-          <th>Class</th>
-          <th>Phone</th>
-          <th>Total Fee</th>
-          <th>Total Paid</th>
-          <th>Due Amount</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for student in students %}
-        <tr class="text-center">
-          <td>{{ student['admission_no'] }}</td>
-          <td>{{ student['name'] }}</td>
-          <td>{{ student['class'] }}</td>
-          <td>{{ student['phone'] }}</td>
-          <td>
-            {% set total_fee = get_total_fee(student['admission_no']) %}
-            {{ '$%.2f' % total_fee if total_fee else 'N/A' }}
-          </td>
-          <td>${{ '%.2f'|format(get_total_paid(student['admission_no'])) }}</td>
-          <td class="fw-bold text-danger">${{ '%.2f'|format(get_due_amount(student['admission_no'])) }}</td>
-        </tr>
-        {% else %}
-        <tr>
-          <td colspan="7" class="text-center text-muted">No students found.</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<style>
-  table.table-hover tbody tr:hover {
-    background-color: #e9f5ff;
-    transition: background-color 0.3s ease;
-  }
-
-  .table-responsive.shadow-sm {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  }
-
-  @media (max-width: 576px) {
-    h1 {
-      font-size: 1.5rem;
-    }
-    table {
-      font-size: 0.9rem;
-    }
-  }
-</style>
+<h2 class="text-center my-4">Student Overview</h2>
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Admission No</th>
+      <th>Class</th>
+      <th>Phone</th>
+      <th>Total Fee (KES)</th>
+      <th>Paid (KES)</th>
+      <th>Due (KES)</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for student in students %}
+    <tr>
+      <td>{{ student.name }}</td>
+      <td>{{ student.admission_no }}</td>
+      <td>{{ student.class }}</td>
+      <td>{{ student.phone }}</td>
+      <td>{{ '%.2f'|format(student.total_fee) }}</td>
+      <td>{{ '%.2f'|format(student.total_paid) }}</td>
+      <td><strong>{{ '%.2f'|format(student.due) }}</strong></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
 {% endblock %}
