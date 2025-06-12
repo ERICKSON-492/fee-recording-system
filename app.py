@@ -204,8 +204,104 @@ def send_reminders():
 
     flash(f'Reminders sent to {count} students.', 'success')
     return redirect(url_for('index'))
+@app.route('/set_fee', methods=['GET', 'POST'])
+def set_fee():
+    if request.method == 'POST':
+        class_name = request.form['class_name']
+        fee_amount = request.form['fee_amount']
+        
+        if not class_name or not fee_amount:
+            flash('All fields are required.', 'error')
+            return redirect(url_for('set_fee'))
 
+        with sqlite3.connect(DATABASE) as conn:
+            c = conn.cursor()
+            c.execute('REPLACE INTO fee_structure (class, fee_amount) VALUES (?, ?)', (class_name, fee_amount))
+            conn.commit()
+        
+        flash('Fee set successfully!', 'success')
+        return redirect(url_for('set_fee'))
+
+    return render_template('set_fee.html')
+
+@app.route('/record_payment', methods=['GET', 'POST'])
+def record_payment():
+    with sqlite3.connect(DATABASE) as conn:
+        c = conn.cursor()
+        c.execute('SELECT admission_no, name FROM students')
+        students = c.fetchall()
+
+    if request.method == 'POST':
+        admission_no = request.form['admission_no']
+        amount_paid = float(request.form['amount_paid'])
+        payment_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        with sqlite3.connect(DATABASE) as conn:
+            c = conn.cursor()
+            c.execute('INSERT INTO payments (admission_no, amount_paid, payment_date) VALUES (?, ?, ?)',
+                      (admission_no, amount_paid, payment_date))
+            conn.commit()
+
+        flash('Payment recorded successfully.', 'success')
+        return redirect(url_for('record_payment'))
+
+    return render_template('record_payment.html', students=students)
+@app.route('/set_due_date', methods=['GET', 'POST'])
+def set_due_date():
+    with sqlite3.connect(DATABASE) as conn:
+        c = conn.cursor()
+        c.execute('SELECT admission_no, name FROM students')
+        students = c.fetchall()
+
+    if request.method == 'POST':
+        admission_no = request.form['admission_no']
+        due_date = request.form['due_date']
+
+        with sqlite3.connect(DATABASE) as conn:
+            c = conn.cursor()
+            c.execute('INSERT INTO fee_cycles (admission_no, due_date) VALUES (?, ?)',
+                      (admission_no, due_date))
+            conn.commit()
+
+        flash('Due date set successfully.', 'success')
+        return redirect(url_for('set_due_date'))
+
+    return render_template('set_due_date.html', students=students)
+@app.route('/check_due')
+def check_due():
+    with sqlite3.connect(DATABASE) as conn:
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        c.execute('SELECT * FROM students')
+        students = c.fetchall()
+
+    def get_total_fee(adm):
+        with sqlite3.connect(DATABASE) as conn:
+            c = conn.cursor()
+            c.execute('SELECT fee_amount FROM fee_structure WHERE class = (SELECT class FROM students WHERE admission_no=?)', (adm,))
+            result = c.fetchone()
+            return result[0] if result else 0.0
+
+    def get_total_paid(adm):
+        with sqlite3.connect(DATABASE) as conn:
+            c = conn.cursor()
+            c.execute('SELECT SUM(amount_paid) FROM payments WHERE admission_no = ?', (adm,))
+            result = c.fetchone()
+            return result[0] if result[0] else 0.0
+
+    def get_due_amount(adm):
+        return get_total_fee(adm) - get_total_paid(adm)
+
+    return render_template("check_due.html", students=students,
+                           get_total_fee=get_total_fee,
+                           get_total_paid=get_total_paid,
+                           get_due_amount=get_due_amount)
+
+# ... (all your route functions and other logic above)
 
 if __name__ == '__main__':
     init_db()
-    app.run(debug=True)
+    import os
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
+
