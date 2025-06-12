@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+  <div class="card shadow p-4">
+    <h3 class="text-center text-success mb-3">Payment Receipt</h3>
+    <p><strong>Student Name:</strong> {{ student['name'] }}</p>
+    <p><strong>Admission No:</strong> {{ student['admission_no'] }}</p>
+    <p><strong>Class:</strong> {{ student['class'] }}</p>
+    <p><strong>Phone:</strong> {{ student['phone'] }}</p>
+    <hr>
+    <p><strong>Payment Date:</strong> {{ date }}</p>
+    <p><strong>Amount Paid:</strong> KES {{ amount_paid }}</p>
+    <p><strong>Total Paid:</strong> KES {{ total_paid }}</p>
+    <p><strong>Total Fee:</strong> KES {{ total_fee }}</p>
+    <p><strong>Remaining Due:</strong> KES {{ due_amount }}</p>
+    <hr>
+    <div class="text-center">
+      <button onclick="window.print()" class="btn btn-primary">Print Receipt</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
