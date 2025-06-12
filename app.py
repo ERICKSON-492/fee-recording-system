@@ -182,14 +182,13 @@ def add_student():
         return redirect(url_for('index'))
 
     return render_template('add_student.html')
-
 @app.route('/send_reminders')
 def send_reminders():
-    """Send SMS reminders to students with outstanding fees."""
     sent_count = 0
     failed = []
 
     with get_db_connection() as conn:
+        conn.row_factory = sqlite3.Row
         students = conn.execute('SELECT * FROM students').fetchall()
 
     client = Client(os.getenv('TWILIO_SID'), os.getenv('TWILIO_AUTH_TOKEN'))
@@ -203,23 +202,17 @@ def send_reminders():
 
         if due > 0:
             try:
-                message = client.messages.create(
+                client.messages.create(
                     body=f"Dear {name}, your outstanding school fee is KES {due:.2f}. Please pay promptly.",
                     from_=twilio_number,
                     to=phone
                 )
-                logger.info(f"Reminder sent to {name} at {phone}")
                 sent_count += 1
             except Exception as e:
-                logger.error(f"Failed to send to {phone}: {e}")
                 failed.append(phone)
 
-    if sent_count > 0:
-        flash(f"Sent {sent_count} reminders.", "success")
-    if failed:
-        flash(f"Failed to send to: {', '.join(failed)}", "error")
+    return render_template("reminder_results.html", sent_count=sent_count, failed=failed)
 
-    return redirect(url_for('index'))
 
 @app.route('/set_fee', methods=['GET', 'POST'])
 def set_fee():
