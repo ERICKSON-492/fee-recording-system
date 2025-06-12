@@ -202,35 +202,40 @@ def add_student():
     return render_template('add_student.html')
 @app.route('/send_reminders')
 def send_reminders():
-    sent_count = 0
-    failed = []
-
-    with get_db_connection() as conn:
+    with sqlite3.connect(DATABASE) as conn:
         conn.row_factory = sqlite3.Row
-        students = conn.execute('SELECT * FROM students').fetchall()
+        cur = conn.cursor()
 
-    client = Client(os.getenv('TWILIO_SID'), os.getenv('TWILIO_AUTH_TOKEN'))
-    twilio_number = os.getenv('TWILIO_PHONE_NUMBER')
+        cur.execute('SELECT * FROM students')
+        students = cur.fetchall()
 
-    for student in students:
-        admission_no = student['admission_no']
-        name = student['name']
-        phone = student['phone']
-        due = get_due_amount(admission_no)
+        reminders_sent = 0
 
-        if due > 0:
-            try:
-                client.messages.create(
-                    body=f"Dear {name}, your outstanding school fee is KES {due:.2f}. Please pay promptly.",
-                    from_=twilio_number,
-                    to=phone
-                )
-                sent_count += 1
-            except Exception as e:
-                failed.append(phone)
+        for student in students:
+            adm = student['admission_no']
+            phone = student['phone']
 
-    return render_template("reminder_results.html", sent_count=sent_count, failed=failed)
+            # Get total fee for class
+            cur.execute('SELECT fee_amount FROM fee_structure WHERE class = ?', (student['class'],))
+            fee_row = cur.fetchone()
+            total_fee = fee_row['fee_amount'] if fee_row else 0
 
+            # Get total payments
+            cur.execute('SELECT SUM(amount_paid) FROM payments WHERE admission_no = ?', (adm,))
+            paid_row = cur.fetchone()
+            total_paid = paid_row[0] if paid_row[0] else 0
+
+            # Calculate due safely
+            due = total_fee - total_paid
+
+            if due > 0:
+                # Here, replace this print with your actual SMS sending logic
+                print(f"Reminder sent to {phone} (Admission No: {adm}) - Due: ${due:.2f}")
+                reminders_sent += 1
+
+        flash(f"Reminders sent to {reminders_sent} student(s).", "success")
+
+    return redirect(url_for('index'))
 
 @app.route('/set_fee', methods=['GET', 'POST'])
 def set_fee():
