@@ -322,6 +322,32 @@ def receipt():
                            total_paid=total_paid,
                            total_fee=total_fee,
                            due_amount=due_amount)
+@app.route('/record_payment', methods=['GET', 'POST'])
+def record_payment():
+    if request.method == 'POST':
+        admission_no = request.form['admission_no']
+        amount_paid = float(request.form['amount'])
+
+        with get_db_connection() as conn:
+            student = conn.execute(
+                'SELECT * FROM students WHERE admission_no = ?',
+                (admission_no,)
+            ).fetchone()
+
+            if not student:
+                flash('Student not found.', 'error')
+                return redirect(url_for('record_payment'))
+
+            conn.execute(
+                'INSERT INTO payments (admission_no, amount_paid, payment_date) VALUES (?, ?, ?)',
+                (admission_no, amount_paid, datetime.now().strftime('%Y-%m-%d'))
+            )
+            conn.commit()
+
+        flash('Payment recorded successfully!', 'success')
+        return redirect(url_for('receipt', admission_no=admission_no, amount_paid=amount_paid))
+
+    return render_template('record_payment.html')
 
 
 if __name__ == '__main__':
