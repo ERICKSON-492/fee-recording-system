@@ -298,6 +298,27 @@ def check_due():
                            get_due_amount=get_due_amount)
 
 # ... (all your route functions and other logic above)
+@app.route('/receipt')
+def receipt():
+    admission_no = request.args.get('admission_no')
+    amount_paid = float(request.args.get('amount_paid'))
+    date = request.args.get('date')
+
+    with get_db_connection() as conn:
+        student = conn.execute(
+            'SELECT * FROM students WHERE admission_no = ?', (admission_no,)
+        ).fetchone()
+        total_paid = get_total_paid(admission_no)
+        total_fee = get_total_fee(admission_no)
+        due_amount = get_due_amount(admission_no)
+
+    return render_template('receipt.html',
+                           student=student,
+                           amount_paid=amount_paid,
+                           date=date,
+                           total_paid=total_paid,
+                           total_fee=total_fee,
+                           due_amount=due_amount)
 
 if __name__ == '__main__':
     init_db()
