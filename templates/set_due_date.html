@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Set Due Date for Student</h2>
+<form method="POST" class="w-50">
+    <div class="mb-3">
+        <label for="admission_no" class="form-label">Admission Number</label>
+        <input type="text" class="form-control" id="admission_no" name="admission_no" required>
+    </div>
+    <div class="mb-3">
+        <label for="due_date" class="form-label">Due Date (YYYY-MM-DD)</label>
+        <input type="date" class="form-control" id="due_date" name="due_date" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Set Due Date</button>
+</form>
+{% endblock %}
