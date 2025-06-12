@@ -154,7 +154,6 @@ def index():
 
 @app.route('/add_student', methods=['GET', 'POST'])
 def add_student():
-    """Add a new student to the database."""
     if request.method == 'POST':
         adm = request.form['admission_no'].strip()
         name = request.form['name'].strip()
@@ -170,7 +169,7 @@ def add_student():
             return redirect(url_for('add_student'))
 
         try:
-            with get_db_connection() as conn:
+            with sqlite3.connect(DATABASE) as conn:
                 conn.execute(
                     'INSERT INTO students (admission_no, name, class, phone) VALUES (?, ?, ?, ?)',
                     (adm, name, cls, phone)
@@ -183,6 +182,7 @@ def add_student():
         return redirect(url_for('index'))
 
     return render_template('add_student.html')
+
 
 
 @app.route('/send_reminders')
