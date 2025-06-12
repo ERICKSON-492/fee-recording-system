@@ -1,18 +1,28 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Check Due Amount</h2>
-<form method="POST" class="w-50 mb-4">
-    <div class="mb-3">
-        <label for="admission_no" class="form-label">Admission Number</label>
-        <input type="text" class="form-control" id="admission_no" name="admission_no" required>
-    </div>
-    <button type="submit" class="btn btn-primary">Check Due</button>
-</form>
+<div class="container mt-4">
+    <h2 class="mb-4 text-primary">Check Due Amount</h2>
+    <form method="POST" class="w-50 mb-4 shadow p-3 bg-light rounded">
+        <div class="mb-3">
+            <label for="admission_no" class="form-label">Admission Number</label>
+            <input type="text" class="form-control" id="admission_no" name="admission_no" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Check Due</button>
+    </form>
 
-{% if due is not none and student is not none %}
-<div class="alert alert-info">
-    <h5>Student: {{ student['name'] }} ({{ student['admission_no'] }})</h5>
-    <p><strong>Due Amount:</strong> ${{ '%.2f'|format(due) }}</p>
+    {% if student %}
+        <div class="alert alert-info">
+            <h5>Student: {{ student['name'] }} ({{ student['admission_no'] }})</h5>
+            {% if due is not none %}
+                <p><strong>Due Amount:</strong> KES {{ '%.2f' | format(due) }}</p>
+            {% else %}
+                <p>No due amount found for this student.</p>
+            {% endif %}
+        </div>
+    {% elif request.method == 'POST' %}
+        <div class="alert alert-warning">
+            <p>No student found with the provided admission number.</p>
+        </div>
+    {% endif %}
 </div>
-{% endif %}
 {% endblock %}
