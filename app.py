@@ -323,6 +323,22 @@ def receipt():
                            total_fee=total_fee,
                            due_amount=due_amount)
 
+from flask import request, render_template, redirect, url_for, flash
+
+@app.route('/set_due_date', methods=['GET', 'POST'])
+def set_due_date():
+    if request.method == 'POST':
+        due_date = request.form.get('due_date')
+
+        if not due_date:
+            flash('Please select a due date.', 'danger')
+            return redirect(url_for('set_due_date'))
+
+        # TODO: Save due_date to database or config
+        flash(f'Due date set to {due_date}', 'success')
+        return redirect(url_for('index'))
+
+    return render_template('set_due_date.html')
 
 
 if __name__ == '__main__':
